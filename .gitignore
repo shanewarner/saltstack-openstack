@@ -1,0 +1,7 @@
+vagrant/.vagrant
+pillar/openstack/data/openstack.sls
+pillar/openstack/data/network.sls
+pillar/openstack/data/mounts.sls
+pillar/openstack/data/rabbitmq.sls
+pillar/openstack/data/mysql.sls
+pillar/openstack/data/ceph.sls

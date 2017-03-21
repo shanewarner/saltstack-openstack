@@ -1,0 +1,54 @@
+auto eth0
+iface eth0 inet manual
+bond-master bond0
+mtu 9000
+
+auto eth1
+iface eth1 inet manual
+mtu 9000
+
+auto lo
+iface lo inet loopback
+
+auto eth2
+iface eth2 inet manual
+bond-master bond0
+mtu 9000
+
+auto eth3
+iface eth3 inet manual
+bond-master bond0
+mtu 9000
+
+auto bond0
+iface bond0 inet static
+    address 10.10.0.2
+    netmask 255.255.255.0
+    bond-miimon 100
+    bond-lacp-rate 1
+    bond-mode 4
+    bond-slaves none
+    mtu 9000
+
+auto vlan100
+iface vlan100 inet static
+    address 192.168.100.2
+    netmask 255.255.255.0
+    gateway 192.168.100.254
+    dns-nameservers 172.16.1.1
+    vlan-raw-device bond0
+    mtu 9000
+
+auto vlan103
+iface vlan103 inet static
+    address 10.30.0.2
+    netmask 255.255.255.0
+    vlan-raw-device bond0
+    mtu 9000
+
+auto vlan106
+iface vlan106 inet static
+    address 10.60.0.2
+    netmask 255.255.255.0
+    vlan-raw-device bond0
+    mtu 9000

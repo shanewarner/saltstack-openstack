@@ -1,0 +1,176 @@
+{% set host = salt['config.get']('fqdn') %}
+{% set my_id = salt['keystone.tenant_get'](name="service")['service'].id %}
+{% set neutron=salt["grains.filter_by"]({
+  "Debian":{
+    "name": "neutron",
+    "pkg": ['neutron-server', 'neutron-plugin-ml2'],
+    "service": ['neutron-server'],
+    "network_pkgs": [ "neutron-l3-agent",
+                      "neutron-dhcp-agent",
+                      "python-neutronclient",
+                      "neutron-plugin-ml2",
+                      "neutron-plugin-openvswitch-agent",
+                      "ipset" ],
+    "compute_pkgs": [ "python-neutronclient",
+                     "neutron-plugin-ml2",
+                     "neutron-plugin-openvswitch-agent",
+                     "ipset"],
+    "network_services": [ "neutron-plugin-openvswitch-agent", "openvswitch-switch", 
+                          "neutron-l3-agent", 
+                          "neutron-dhcp-agent", 
+                          "neutron-metadata-agent"],
+    "compute_services": ["neutron-plugin-openvswitch-agent", "openvswitch-switch"]
+  },
+  "default": {
+    "name": "neutron",
+    "pkg": ['neutron-server', 'neutron-plugin-ml2'],
+    "service": ['neutron-server'],
+    "network_pkgs": [ "neutron-l3-agent",
+                      "neutron-dhcp-agent",
+                      "python-neutronclient",
+                      "neutron-plugin-ml2",
+                      "neutron-plugin-openvswitch-agent",
+                      "ipset" ],
+    "compute_pkgs": [ "python-neutronclient",
+                     "neutron-plugin-ml2",
+                     "neutron-plugin-openvswitch-agent",
+                     "ipset"],
+    "network_services": ["neutron-plugin-openvswitch-agent",
+                        "openvswitch-switch", 
+                        "neutron-l3-agent", 
+                        "neutron-dhcp-agent", 
+                        "neutron-metadata-agent"],
+    "compute_services": ["neutron-plugin-openvswitch-agent", "openvswitch-switch"]
+  },
+  },merge=salt["pillar.get"]("neutron:lookup")) %}
+
+
+
+# Set the neutron-server default config
+{%- set neutron_config = {
+  "DEFAULT": {
+    "auth_strategy": "keystone",
+    "rpc_backend": "rabbit",
+    "rabbit_host": salt["pillar.get"]("neutron:rabbitmq:ip"),
+    "rabbit_userid": salt["pillar.get"]("neutron:rabbitmq:name"),
+    "rabbit_password": '"' + salt["pillar.get"]("neutron:rabbitmq:password") + '"',
+    "core_plugin": "ml2",
+    "service_plugins": "router",
+    "allow_overlapping_ips": "True",
+    "lock_path": "$state_path/lock",
+    "notify_nova_on_port_status_changes": "True",
+    "notify_nova_on_port_data_changes": "True",
+    "nova_url": "http://" + salt["pillar.get"]("nova:internal_ip", "127.0.0.1")  + ":8774/v2",
+    "nova_admin_auth_url": "http://" + salt["pillar.get"]("nova:internal_ip", "127.0.0.1") + ":35357/v2.0",
+    "nova_region_name": "regionOne",
+    "nova_admin_username": "nova",
+    "nova_admin_tenant_id": my_id,
+    "nova_admin_password": salt["pillar.get"]("nova:keystone:password"), 
+  },
+  "keystone_authtoken": {
+    "admin_tenant_name": "service",
+    "admin_user": "neutron",
+    "admin_password":  salt["pillar.get"]("neutron:keystone:password"),
+    "auth_host": salt["pillar.get"]("keystone:internal_ip", "127.0.0.1"),
+    "auth_port": "35357",
+    "auth_protocol": "http",
+  },
+  "database": {
+    "connection": "mysql://neutron:" + salt["pillar.get"]("mysql:user:neutron:password") + "@" + salt["pillar.get"]("mysql:server:mysqld:bind-address","localhost") + "/neutron?charset=utf8",
+  },
+  "AGENT": {
+    "root_helper": "sudo neutron-rootwrap /etc/neutron/rootwrap.conf"
+  }
+} %}
+
+# Set the neutron-server ml2_conf.ini default config
+{%- set ml2_config = {
+  "ml2": {
+    "type_drivers": "flat,gre",
+    "tenant_network_types": "gre",
+    "mechanism_drivers": "openvswitch",
+  },
+  "ml2_type_flat": {
+    "flat_networks": "external",
+  },
+  "ml2_type_gre": {
+    "tunnel_id_ranges": "1:1000",
+  },
+  "securitygroup": {
+    "enable_security_group": "True",
+    "enable_ipset": "True",
+    "firewall_driver": "neutron.agent.linux.iptables_firewall.OVSHybridIptablesFirewallDriver",
+  },
+  "ovs": {
+    "local_ip": salt["pillar.get"]("node_interfaces:" + host +":gre"),
+    "tunnel_type": "gre",
+    "enable_tunneling": "True",
+    "bridge_mappings": "external:br-ex",
+  }
+} %}
+
+# Set the compute ml2_conf.ini default config
+{%- set ml2_compute_config = {
+  "ml2": {
+    "type_drivers": "flat,gre",
+    "tenant_network_types": "gre",
+    "mechanism_drivers": "openvswitch",
+  },
+  "ml2_type_flat": {
+    "flat_networks": "external",
+  },
+  "ml2_type_gre": {
+    "tunnel_id_ranges": "1:1000",
+  },
+  "securitygroup": {
+    "enable_security_group": "True",
+    "enable_ipset": "True",
+    "firewall_driver": "neutron.agent.linux.iptables_firewall.OVSHybridIptablesFirewallDriver",
+  },
+  "ovs": {
+    "local_ip": salt["pillar.get"]("node_interfaces:" + host +":gre"),
+    "tunnel_type": "gre",
+    "enable_tunneling": "True",
+  }
+} %}
+
+{%- set l3_agent_config = {
+  "DEFAULT": {
+    "interface_driver": "neutron.agent.linux.interface.OVSInterfaceDriver",
+    "use_namespaces": "True",
+    "external_network_bridge": "br-ex",
+  }
+} %}
+
+{%- set dhcp_agent_config = {
+  "DEFAULT": {
+    "dnsmasq_config_file": "/etc/neutron/dnsmasq-neutron.conf",
+    "interface_driver": "neutron.agent.linux.interface.OVSInterfaceDriver",
+    "dhcp_driver": "neutron.agent.linux.dhcp.Dnsmasq",
+    "use_namespaces": "True",
+  }
+} %}
+
+{%- set metadata_agent_config = {
+  "DEFAULT": {
+    "auth_url": "http://" + salt["pillar.get"]("keystone:internal_ip", "127.0.0.1") + ":5000/v2.0",
+    "auth_region": "RegionOne",
+    "admin_tenant_name": "service",
+    "admin_user": "neutron",
+    "admin_password":  salt["pillar.get"]("neutron:keystone:password"),
+    "nova_metadata_ip": salt["pillar.get"]("neutron:internal_ip"),
+    "metadata_proxy_shared_secret": salt["pillar.get"]("neutron:metadata_secret")
+  }
+} %}
+
+{% if salt["pillar.get"]("neutron:config") %}
+  {% for section, value in salt["pillar.get"]("neutron:config").iteritems() %}
+    {% if not neutron_config.has_key(section) %}
+      {% do neutron_config.update({ section:{} }) %}
+    {% endif %}
+    {% do neutron_config[section].update(value) %}
+  {% endfor %}
+{% endif %}
+
+{#- vim:ft=sls
+-#}

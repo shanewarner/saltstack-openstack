@@ -1,0 +1,40 @@
+--- nova-orig/image/glance.py	2014-06-05 23:33:22.000000000 +0200
++++ nova/image/glance.py	2014-07-31 08:59:04.534413522 +0200
+@@ -342,6 +342,7 @@
+                 for chunk in image_chunks:
+                     data.write(chunk)
+             finally:
++                utils.fsync(data)
+                 if close_file:
+                     data.close()
+ 
+--- nova-orig/utils.py	2014-07-31 08:49:52.061822770 +0200
++++ nova/utils.py	2014-07-31 09:38:55.206518192 +0200
+@@ -19,6 +19,7 @@
+ 
+ import contextlib
+ import datetime
++import fcntl
+ import functools
+ import hashlib
+ import inspect
+@@ -1170,3 +1171,19 @@
+         return multiprocessing.cpu_count()
+     except NotImplementedError:
+         return 1
++
++
++# copied from swift/common/utils.py
++def fsync(fd):
++    """
++    Sync modified file data and metadata to disk.
++
++    :param fd: file descriptor
++    """
++    if hasattr(fcntl, 'F_FULLSYNC'):
++        try:
++            fcntl.fcntl(fd, fcntl.F_FULLSYNC)
++        except IOError as e:
++            raise OSError(e.errno, 'Unable to F_FULLSYNC(%s)' % fd)
++    else:
++        os.fsync(fd)

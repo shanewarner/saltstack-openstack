@@ -1,0 +1,99 @@
+# Used by keystone module
+keystone.token: set random token here
+keystone.endpoint: http://10.10.0.2:35357/v2.0
+
+keystone:
+  admin_token: set random token here
+  public_ip: 192.168.100.2
+  internal_ip: 10.10.0.2
+  admin_ip: 10.10.0.2
+  memcached:
+    ip: [ 10.10.0.2 ]
+  keystone:
+    admin:
+      password: 'xxxxxxxxxxxxxxxxxxxxxxxx'
+      email: your@email.com
+  config:
+    DEFAULT:
+      #admin_token: ADMIN_TOKEN
+      debug: false
+
+glance:
+  public_ip: 192.168.100.2
+  internal_ip: 10.10.0.2
+  admin_ip: 10.10.0.2
+  keystone:
+    host: 10.10.0.2
+    password: 'xxxxxxxxxxxxxxxxxxxxxx'
+    email: 'your@email.com'
+  api-config:
+    DEFAULT:
+      debug: False
+      verbose: False
+  reg-config:
+    DEFAULT:
+      debug: False
+      verbose: False
+
+neutron:
+  public_ip: 192.168.100.2
+  internal_ip: 10.10.0.2
+  admin_ip: 10.10.0.2
+  keystone:
+    host: 10.10.0.2
+    password: 'xxxxxxxxxxxxxxxxx'
+    email: 'your@email.com'
+  rabbitmq:
+    name: openstack
+    password: "xxxxxxxxxxxxxxxxxxxx"
+    ip: 10.10.0.2
+  metadata_secret: set random key here
+
+nova:
+  public_ip: 192.168.100.2
+  internal_ip: 10.10.0.2
+  admin_ip: 10.10.0.2
+  public_interface: eth1
+  private_interface: eth0
+  keystone:
+    password: 'xxxxxxxxxxxxxxxxxxxxx'
+    email: your@email.com
+    host: 10.10.0.2
+  rabbitmq:
+    name: openstack
+    password: "xxxxxxxxxxxxxxxxxxxxx"
+    ip: 10.10.0.2
+  config:
+    DEFAULT:
+      novncproxy_base_ip: 192.168.100.2
+
+cinder:
+  public_ip: 192.168.100.2
+  internal_ip: 10.30.0.2
+  admin_ip: 10.30.0.2
+  keystone:
+    password: 'xxxxxxxxxxxxxxxxxxxxxxxx'
+    email: your@email.com
+    host: 10.10.0.2
+  rabbitmq:
+    name: openstack
+    password: "xxxxxxxxxxxxxxxxxxxxxxxxx"
+    ip: 10.10.0.2
+  config:
+    DEFAULT:
+      debug: False
+
+memcached:
+  deamonize: True
+  verbose_level: 0
+  memory_cap: 64
+  port: 11211
+  user: 'memcache'
+  listen_address: '10.10.0.2'
+  max_connections: 1024
+  lock_paged_memory: False
+  error_on_mem_full: False
+  max_core_file_limit: False
+
+{#- vim:ft=sls
+-#}
